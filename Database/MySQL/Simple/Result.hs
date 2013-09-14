@@ -151,7 +151,7 @@ instance Result [Char] where
 
 instance Result UTCTime where
     convert f = doConvert f ok $ \bs ->
-                case parseTime defaultTimeLocale "%F %T" (B8.unpack bs) of
+                case parseTime defaultTimeLocale "%F %T%Q" (B8.unpack bs) of
                   Just t -> t
                   Nothing -> conversionFailed f "UTCTime" "could not parse"
         where ok = mkCompats [DateTime,Timestamp]
@@ -167,13 +167,10 @@ instance Result Day where
                                    <*> decimal
 
 instance Result TimeOfDay where
-    convert f = flip (atto ok) f $ do
-                hours <- decimal <* char ':'
-                mins <- decimal <* char ':'
-                secs <- decimal :: Parser Int
-                case makeTimeOfDayValid hours mins (fromIntegral secs) of
-                  Just t -> return t
-                  _      -> conversionFailed f "TimeOfDay" "could not parse"
+    convert f = doConvert f ok $ \bs ->
+                case parseTime defaultTimeLocale "%T%Q" (B8.unpack bs) of
+                  Just t -> t
+                  Nothing -> conversionFailed f "TimeOfDay" "could not parse"
         where ok = mkCompats [Time]
 
 isText :: Field -> Bool
